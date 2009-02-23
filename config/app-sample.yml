@@ -1,0 +1,14 @@
+all:
+  plexcel:
+    home: /var/lib/plexcel
+    enable_local_login: true 
+    host: ldap:///DefaultNamingContext
+
+  sf_guard_plugin:
+    signin_form: SSOPlexcelForm
+    profile_class: sfGuardUserProfile
+    profile_field_name: sf_guard_user_id
+
+  sf_guard_sso:  
+    field: is_local
+    local_login: true    

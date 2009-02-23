@@ -1,0 +1,44 @@
+sfGuardUserProfile:
+  sgup_admin:
+    is_local: true
+
+sfGuardUser:
+  sgu_admin:
+    username:       admin
+    password:       admin
+    is_super_admin: true
+    Profile:        sgup_admin
+
+sfGuardPermission:
+  sgp_administrator:
+    name: administrator
+  sgp_manager:
+    name: manager
+  sgp_user:
+    name: user
+
+sfGuardGroup:
+  sgg_administrator:
+    name: administrator
+    description: Administrator group
+    
+  sgg_manager:
+    name: manager
+    description: Manager group
+  
+  sgg_user:
+    name: user
+    description: User group
+    
+sfGuardGroupPermission:
+  sggp_administrator:
+    sfGuardGroup:      sgg_administrator
+    sfGuardPermission: sgp_administrator
+
+  sggp_manager:
+    sfGuardGroup:      sgg_manager
+    sfGuardPermission: sgp_manager
+
+  sggp_permission_user:
+    sfGuardGroup:      sgg_user
+    sfGuardPermission: sgp_user
