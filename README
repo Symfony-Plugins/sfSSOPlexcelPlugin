@@ -1,0 +1,41 @@
+this plugin required sfDoctrineGuardPlugin and sfPlexcel ( http://www.ioplex.com/plexcel.html ).
+
+
+for use sfSSOPlexcelPlugin your need a Profile table .
+if you have already have an profile table add a boolean field like this:
+
+
+      is_local: {type: boolean, default: true}  #false if it's a SSO account, true if it's a local account
+
+
+
+if you don't have a profile table add in your schema :
+
+
+      sfGuardUserProfile:
+        columns:
+          user_id: integer(4)
+          is_local: {type: boolean, default: true}  #false if it's a SSO account, true if it's a local account
+        relations:
+          Profile:
+            class: sfGuardUser
+            foreignAlias: Profile
+            foreignType: one
+            onDelete: CASCADE
+
+
+You can change the name of the user profile class and the foreign key name in your app.yml  
+
+    all:
+      sf_guard_sso:  
+        field: is_local
+        local_login: true    
+
+
+in your application, you need to edit your myUser.class.php and change the parent class
+
+
+      class myUser extends sfSSOSecurityUser
+      {
+      }
+  
