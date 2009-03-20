@@ -3,21 +3,28 @@
 /**
  * SSO Validator
  * use plexcel for check if the user have an account in the ldap
- * 
+ *
  * @author pierre
  *
  */
 class sfSSOValidatorUser extends sfGuardValidatorUser
 {
-  
+
   protected function doClean($values)
   {
     $username = isset($values[$this->getOption('username_field')]) ? $values[$this->getOption('username_field')] : '';
     $password = isset($values[$this->getOption('password_field')]) ? $values[$this->getOption('password_field')] : '';
     $sf_user = sfContext::getInstance()->getUser();
-   
+
+    if(! preg_match('#@#', $username) && sfConfig::get('app_sf_guard_sso_auto_add_domaine', false))
+    {
+      $username_sso = $username.'@'. sfConfig::get('app_sf_guard_sso_auto_add_domaine', false) ;
+    }else
+    {
+      $username_sso = $username;
+    }
     // user exists?
-    if( sfPlexcel::logOn($username, $password))
+    if( sfPlexcel::logOn($username_sso, $password))
     {
       $sf_user->setSSOAuthentification(true);
       $sf_user->setSSOUsername($username);
@@ -28,7 +35,7 @@ class sfSSOValidatorUser extends sfGuardValidatorUser
                 ->addWhere('sgp.'.sfConfig::get('app_sf_guard_sso_field','is_local').' = false')
                 ->limit(1)
                 ->execute()
-                ->getFirst();      
+                ->getFirst();
 
       // looking for an existant user in the database.
       if(!$user )
@@ -39,14 +46,14 @@ class sfSSOValidatorUser extends sfGuardValidatorUser
         $user->save();
       }
       /*else
-      if($user->getProfile()->get(sfConfig::get('app_sf_guard_sso_field','is_local')) == true)    
+      if($user->getProfile()->get(sfConfig::get('app_sf_guard_sso_field','is_local')) == true)
       {
         // local user, who have been added to the ldap.
         $user->getProfile()
              ->set(sfConfig::get('app_sf_guard_sso_field','is_local'), false)
              ->save();
       }*/
-      
+
       return array_merge($values, array('user' => $user));
     }
 
@@ -76,6 +83,6 @@ class sfSSOValidatorUser extends sfGuardValidatorUser
 
     throw new sfValidatorErrorSchema($this, array($this->getOption('username_field') => new sfValidatorError($this, 'invalid')));
   }
-  
+
 }
 
