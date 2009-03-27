@@ -19,11 +19,11 @@ class sfSSOPlexcelPluginConfiguration extends sfPluginConfiguration
     {
       if (!extension_loaded('plexcel'))
       {
-        throw new sfException("This plugin required plexcel extension, check the manual.");
+//        throw new sfException("This plugin required plexcel extension, check the manual.");
       }
       if(!in_array('sfDoctrineGuardPlugin',$this->configuration->getPlugins()))
       {
-        throw new sfException ("This plugin required sfDoctrineGuardPlugin.");
+//        throw new sfException ("This plugin required sfDoctrineGuardPlugin.");
       }
     }
   }

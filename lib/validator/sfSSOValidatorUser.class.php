@@ -9,6 +9,11 @@
  */
 class sfSSOValidatorUser extends sfGuardValidatorUser
 {
+  public function configure($options = array(), $messages = array())
+  {
+    parent::configure($options , $messages );
+    $this->addMessage('invalid_groups_not_authorized', 'Your user group is not authorized.');
+  }
 
   protected function doClean($values)
   {
@@ -26,6 +31,17 @@ class sfSSOValidatorUser extends sfGuardValidatorUser
     // user exists?
     if( sfPlexcel::logOn($username_sso, $password))
     {
+      // checking if the login is restricted only for user who
+      if(sfConfig::get('app_sf_guard_sso_restrict_login_to_groups', false))
+      {
+        $auth_groups = sfConfig::get('app_ldap_search_groups');
+        if(!sfPlexcel::chechIfUserIsMemberOfGroups($username_sso, $auth_groups))
+        {
+          throw new sfValidatorError($this, 'invalid_groups_not_authorized');
+        }
+      }
+
+
       $sf_user->setSSOAuthentification(true);
       $sf_user->setSSOUsername($username);
       $user = Doctrine_Query::create()
