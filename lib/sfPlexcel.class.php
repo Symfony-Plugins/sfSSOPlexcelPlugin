@@ -1,9 +1,18 @@
 <?php
 
-define('PLEXCEL_AUTH_NONE',      0x0);
-define('PLEXCEL_AUTH_SSO',       0x1);
-define('PLEXCEL_AUTH_LOGON',     0x2);
-define('PLEXCEL_AUTH_SSO_LOGON', 0x3);
+# include original plexcel.php file
+if (sfConfig::get('app_sf_guard_sso_lib_dir',false))
+{
+  require_once sfConfig::get('app_sf_guard_sso_lib_dir') . '/common.php';
+  require_once sfConfig::get('app_sf_guard_sso_lib_dir') . '/plexcel.php';
+}
+else
+{
+  require_once dirname(__FILE__) . '/vendor/common.php';
+  require_once dirname(__FILE__) . '/vendor/plexcel.php';
+}
+
+
 
 /**
  * class for use plexcel
@@ -12,7 +21,7 @@ define('PLEXCEL_AUTH_SSO_LOGON', 0x3);
 class sfPlexcel
 {
 
-  private static $ressource = false;
+  private static $resource = false;
 
   /**
    * create a new connection
@@ -20,34 +29,69 @@ class sfPlexcel
    */
   public static function getConnection()
   {
-    if(self::getRessource() == false)
+    if (self::$resource == false)
     {
-      self::$ressource = plexcel_new(self::getLdapConfig(), array());
-    }
-    return self::getRessource() ;
-  }
-
-  /**
-   * return the ressource for the current connection
-   *
-   * @return ressource unknown_type
-   */
-  private static function getRessource()
-  {
-    if(self::$ressource !== false && !is_resource(self::$ressource))
-    {
+      self::$resource = plexcel_new(self::getLdapConfig(), array());
+      if ( !is_resource(self::$resource))
+      {
         throw new sfException("Connection error");
+      }
     }
-    return self::$ressource;
+    return self::$resource ;
   }
 
   /**
-   * return an array of the configuration for the ldap connection
+   * build the dsn
+   *
    * @return array $config
    */
   public static function getLdapConfig()
   {
-    return sfConfig::get('app_plexcel_host','ldap:///DefaultNamingContext');
+    $authority        = NULL;
+    $base             = NULL;
+    $bindstr          = NULL;
+    $px               = NULL;
+    $action           = NULL;
+    $is_authenticated = FALSE;
+
+    if ($base == NULL)
+    {
+      $base = 'DefaultNamingContext';
+    }
+
+    $authority = NULL;
+
+    if (!$authority)
+    {
+      /* If the authority is not set and a username is
+       * supplied, use the domain as the authority.
+       */
+      $username = NULL;
+      if ($username)
+      {
+        $pos = strpos($username, '@');
+        if ($pos > 0)
+        {
+          $domain = substr($username, $pos + 1);
+          if ($domain)
+          {
+            $authority = $domain;
+          }
+
+        }
+      }
+
+    }
+
+    $bindstr = 'ldap://';
+    if ($authority)
+    {
+      $bindstr .= $authority;
+    }
+
+    $bindstr .= '/' . $base;
+
+    return $bindstr;
   }
 
   /**
@@ -93,29 +137,12 @@ class sfPlexcel
    *          string filter (default value objectClass=*)
    *          array attrs (default value NULL)
    *          boolean attronly (default value FALSE)
-   *          int   timeout ( default value 60)
+   /*          int   timeout ( default value 60)
    * @return array() $result
    */
   public static function search( $params = array())
   {
     return plexcel_search_objects(self::getConnection(), $params);
-  }
-
-  /** ancienne fonction
-   * function plexcel_token($name) {
-      $tok = $_SESSION[$name] = rand(10000, 99999);
-      return $tok;
-     }
-   * @return unknown_type
-   */
-
-  /**
-   * return the token
-   * @return unknown_type
-   */
-  public static function getToken()
-  {
-    // plexcel_token
   }
 
   /**
@@ -169,9 +196,9 @@ class sfPlexcel
    *
    * @param string $account account name
    * @param array() $attribut
-   * @return unknown_type
+   * @return array
    */
-  public static function getAccount($account = null, $attribut = 'PLEXCEL_SUPPLEMENTAL')
+  public static function getAccount($account = null, $attribut = PLEXCEL_SUPPLEMENTAL)
   {
     return plexcel_get_account(self::getConnection(), $account, $attribut );
   }
@@ -183,17 +210,19 @@ class sfPlexcel
    */
   public static function getCurrentUser()
   {
+    self::getConnection();
     if(self::isSSO())
     {
+      sfContext::getInstance() ->getLogger() ->log('DEBUG splexcel is sso = true');
       $result = self::getAccount(null);
-      if($result == false)
+      if ($result == false)
       {
         return self::status();
       }
 
       return $result['sAMAccountName'];
     }
-
+    sfContext::getInstance() ->getLogger() ->log('DEBUG splexcel is sso = false');
     return false;
   }
 
@@ -204,7 +233,7 @@ class sfPlexcel
    */
   public static function getUserGroups($user)
   {
-    return self::getAccount($user, array('memberOf'));
+    return self::getAccount($user, array('CN'));
   }
 
  /**
@@ -217,11 +246,11 @@ class sfPlexcel
   {
     $groups_of_user  = self::getUserGroups($user);
 
-    if(isset($groups_of_user['memberOf']))
+    if (isset($groups_of_user['memberOf']))
     {
       foreach($groups as $group)
       {
-        if(preg_match('#[=,]'.$group.",#", var_export($groups_of_user['memberOf'], true)))
+        if (preg_match('#[=,]'.$group.",#", var_export($groups_of_user['memberOf'], true)))
         {
           return true;
         }
@@ -286,6 +315,11 @@ class sfPlexcel
     plexcel_log($level, $message);
   }
 
+  public static function plexcel_token($name)
+  {
+    $tok = $_SESSION[$name] = rand(10000, 99999);
+    return $tok;
+  }
   /**
    * plexcel doc :
    * The plexcel_accept_token function accepts and returns base 64 encoded authentication tokens and
@@ -310,39 +344,14 @@ class sfPlexcel
    */
   public static function isSSO($options=NULL)
   {
-    $headers = apache_request_headers();
-
-    $token = '';
-    if (isset($headers['Authorization']))
+    if (sfConfig::get('sf_environment') != 'test')
     {
-      $token = $headers['Authorization'];
-      if (strncmp($token, 'Negotiate ', 10) != 0)
-      {
-        plexcel_status(self::getConnection(), 'Token does not begin with "Negotiate "');
-        return FALSE;
-      }
-
-      $token = self::acceptToken($token);
-
-      if (self::status() != PLEXCEL_CONTINUE_NEEDED)
-      {
-        if (self::status() == PLEXCEL_SUCCESS)
-        {
-          /* authentication success */
-          if ($token)
-          header('WWW-Authenticate: Negotiate ' . $token, TRUE, 200);
-          return TRUE;
-        }
-        /* authentication failed or something unexpected happend */
-        return FALSE;
-      }
-      $token = ' ' . $token;
+      $headers = apache_request_headers();
+      sfContext::getInstance() ->getLogger() ->log('DEBUG sfPlexcel, is sso : headers : '. var_export($headers, true) .' ok');
     }
 
-
-
-    return false;
-  }
+    return plexcel_sso(self::getConnection(), $options);
+ }
 
   /**
    * change an user password (need the current password)

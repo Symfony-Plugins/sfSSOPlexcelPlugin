@@ -20,9 +20,11 @@ class sfSSOValidatorUser extends sfGuardValidatorUser
   {
     $username = isset($values[$this->getOption('username_field')]) ? $values[$this->getOption('username_field')] : '';
     $password = isset($values[$this->getOption('password_field')]) ? $values[$this->getOption('password_field')] : '';
+
     $sf_user = sfContext::getInstance()->getUser();
     $log = sfContext::getInstance()->getLogger();
     $log->log('DEBUG validator, checking');
+
     if(! preg_match('#@#', $username) && sfConfig::get('app_sf_guard_sso_auto_add_domaine', false))
     {
       $username_sso = $username.'@'. sfConfig::get('app_sf_guard_sso_auto_add_domaine', false) ;
@@ -30,13 +32,14 @@ class sfSSOValidatorUser extends sfGuardValidatorUser
     {
       $username_sso = $username;
     }
+
     $log->log('DEBUG validator, checking : '.$username_sso);
     // user exists?
+
     if (sfPlexcel::logOn($username_sso, $password))
     {
       $log->log('DEBUG validator, user it\'s a sso user');
-      $this->checkGroupsForRestrictedLogin($username_sso);
-      $this->checkAuthorizedCN($username_sso);
+      $this->checkIfuserIsMemberOf();
       $log->log('DEBUG valiadtor, log success');
       $sf_user->setSSOAuthentification(true);
       $sf_user->setSSOUsername($username);
@@ -57,14 +60,6 @@ class sfSSOValidatorUser extends sfGuardValidatorUser
         $user->getProfile()->set(sfConfig::get('app_sf_guard_sso_field','is_local'),false);
         $user->save();
       }
-      /*else
-      if($user->getProfile()->get(sfConfig::get('app_sf_guard_sso_field','is_local')) == true)
-      {
-        // local user, who have been added to the ldap.
-        $user->getProfile()
-             ->set(sfConfig::get('app_sf_guard_sso_field','is_local'), false)
-             ->save();
-      }*/
 
       return array_merge($values, array('user' => $user));
     }
@@ -99,62 +94,31 @@ class sfSSOValidatorUser extends sfGuardValidatorUser
 
 
  /**
-  * this function check if the user who try to login have an authorized cn.
+  * this function check if the user is member of a groups
   *
   */
-  public function checkAuthorizedCN($username)
+  public function checkIfuserIsMemberOf()
   {
     $log = sfContext::getInstance()->getLogger();
     $result = array();
     $log->log('DEBUG validator authorized CN');
-    if (is_array(sfConfig::get('app_sf_guard_sso_authorized_cn', false)) )
+    if( is_array(sfConfig::get('app_sf_guard_sso_authorized_cn')) )
     {
-      $user_cn = sfPlexcel::getAccount($username, array('distinguishedName'));
-      $log->log('DEBUG validator authorized CN, CN : '.$user_cn);
-      preg_match_all('/CN\=(.*?),/i', $user_cn, $result);
-
-      $authorized_group = false;
-      $configured_group = sfConfig::get('app_sf_guard_sso_authorized_cn');
-      foreach ($result[1] as $group)
+      $groups = sfConfig::get('app_sf_guard_sso_authorized_cn');
+      foreach($groups as $group)
       {
-        if (in_array(trim($group), $configured_group))
-        {
-          $log->log('DEBUG validator authorized CN, group '.$group.' is authorized');
-          $authorized_group = true;
-        }
+          if(sfPlexcel::isMemberOf($group))
+          {
+            $log->log('DEBUG validator authorized CN : user is a member of '.$group);
+            return true;
+          }
+          $log->log('DEBUG validator authorized CN : user is NOT a member of '.$group);
       }
+      throw new sfValidatorError($this, 'invalid_groups_not_authorized');
 
-      if (! $authorized_group)
-      {
-        $log->log('DEBUG validator authorized CN, user is not authorized');
-        throw new sfValidatorError($this, 'invalid_cn_not_authorized');
-      }
     }
-    $log->log('DEBUG validator authorized CN, return true');
-    return true;
-  }
-
- /**
-   * this function check if the user who try to login is member of an authorized group.
-   *
-   * @param $username
-   * @param bool
-   */
-  public function checkGroupsForRestrictedLogin($username)
-  {
-    $log = sfContext::getInstance()->getLogger();
-    if (sfConfig::get('app_sf_guard_sso_restrict_login_to_groups', false))
-    {
-      $log->log('DEBUG validator checking groups ');
-      $auth_groups = sfConfig::get('app_ldap_search_groups');
-      if (!sfPlexcel::chechIfUserIsMemberOfGroups($username, $auth_groups))
-      {
-        $log->log('DEBUG validator groups is not authorized ('.sfPlexcel::getUserGroups($username).') ');
-        throw new sfValidatorError($this, 'invalid_groups_not_authorized');
-      }
-    }
-    $log->log('DEBUG validator checking groups, groups authorized, return true');
-    return true;
+    $log->log('DEBUG validator is not a member of a groups');
+    return false;
   }
 
 }
