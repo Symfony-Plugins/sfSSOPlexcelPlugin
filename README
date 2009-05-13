@@ -1,41 +1,45 @@
-this plugin required sfDoctrineGuardPlugin and sfPlexcel ( http://www.ioplex.com/plexcel.html ).
+Install of sfSSOPlexcelPlugin
+
+1) You should activate sfGuardSSO module in the settings.yml of your application
+2) You should add some some parameter in your app.yml
+
+all:
+  sf_guard_plugin:
+    signin_form:        SSOPlexcelForm    # form class for SSOPlexcel
+    profile_class:      DoolUser          # profile class 
+    profile_field_name: user_id           # foreign key in the profile class
+    success_signin_url: @homepage         # url where the user is redirect after a login
+
+  sf_guard_sso:
+    active:           true                # activate sso login
+    field:            is_local            # field champ qui indique si c'est un utilisateur local ou SSO
+    local_login:      true                # active local login
+    auto_add_domaine: ad.arianespace.fr   # domain to adomaine à ajouter à l'utilisateur quand on se connecter en SSO
+    restrict_login_to_groups: true        # 
+    authorized_cn:    [ admins]           # groups list authorized to logon with SSO
+    lib_dir:          <?php echo sfConfig::get('sf_lib_dir').'/vendor/plexcel'.PHP_EOL; ?> # répertoire ou sont stocké les fichiers PHP de plexcel
+    success_signin_url: @homepage_sso     # url where the user is redirect  after a SSO login
+
+  ldap_search:
+    action_count_users_never_connected: true # active test action in module ldap search module
+    action_search:    true                # active search action in module ldap search module
+    user_filter:                          # default filters 
+      department:     'mydepartement'
+    groups:
+      Administrators: administrator
+
+3) in your routing.yml add
+
+sf_guard_signout:
+  url:   /login
+  param: { module: sfGuardSSO, action: signin }
+
+sf_guard_signout:
+  url:   /signout
+  param: { module: sfGuardSSO, action: signout }
 
 
-for use sfSSOPlexcelPlugin your need a Profile table .
-if you have already have an profile table add a boolean field like this:
-
-
-      is_local: {type: boolean, default: true}  #false if it's a SSO account, true if it's a local account
+4) clear your cache with : php symfony cc
 
 
 
-if you don't have a profile table add in your schema :
-
-
-      sfGuardUserProfile:
-        columns:
-          user_id: integer(4)
-          is_local: {type: boolean, default: true}  #false if it's a SSO account, true if it's a local account
-        relations:
-          Profile:
-            class: sfGuardUser
-            foreignAlias: Profile
-            foreignType: one
-            onDelete: CASCADE
-
-
-You can change the name of the user profile class and the foreign key name in your app.yml  
-
-    all:
-      sf_guard_sso:  
-        field: is_local
-        local_login: true    
-
-
-in your application, you need to edit your myUser.class.php and change the parent class
-
-
-      class myUser extends sfSSOSecurityUser
-      {
-      }
-  

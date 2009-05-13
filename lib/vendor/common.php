@@ -1,7 +1,7 @@
 <?php
 // common.php - common routines used by setup.php and examples
 
-require_once dirname(__FILE__).'/plexcel.php';
+require_once('plexcel.php');
 
 define('PFF_NOINPUT',         0x000000001);
 define('PFF_TIME',            0x000000002);
