@@ -17,7 +17,7 @@ all:
     auto_add_domaine: domain.com          # SSO domain
     restrict_login_to_groups: true        # 
     authorized_cn:    [ admins]           # groups list authorized to logon with SSO
-    lib_dir:          <?php echo sfConfig::get('sf_lib_dir').'/vendor/plexcel'.PHP_EOL; ?> # répertoire ou sont stocké les fichiers PHP de plexcel
+    lib_dir:          <?php echo sfConfig::get('sf_lib_dir').'/vendor/plexcel'.PHP_EOL; ?> # override default plexcel files
     success_signin_url: @homepage_sso     # url where the user is redirect  after a SSO login
 
   ldap_search:
