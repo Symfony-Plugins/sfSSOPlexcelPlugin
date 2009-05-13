@@ -14,7 +14,7 @@ all:
     active:           true                # activate sso login
     field:            is_local            # field champ qui indique si c'est un utilisateur local ou SSO
     local_login:      true                # active local login
-    auto_add_domaine: ad.arianespace.fr   # domain to adomaine à ajouter à l'utilisateur quand on se connecter en SSO
+    auto_add_domaine: domain.com          # SSO domain
     restrict_login_to_groups: true        # 
     authorized_cn:    [ admins]           # groups list authorized to logon with SSO
     lib_dir:          <?php echo sfConfig::get('sf_lib_dir').'/vendor/plexcel'.PHP_EOL; ?> # répertoire ou sont stocké les fichiers PHP de plexcel
