@@ -84,8 +84,7 @@ class sfSSOValidatorUser extends sfGuardValidatorUser
         $user->getProfile()->setLastname($userInfos['sn']);
         $user->getProfile()->setEmail($userInfos['mail']);
         $user->getProfile()->set(sfConfig::get('app_sf_guard_sso_field','is_local'),false);
-        $user->getProfile()->setDistinguishedName($user['distinguishedName']);
-        $user->getProfile()->set(sfConfig::get('app_sf_guard_sso_field','is_local'),false);
+        $user->getProfile()->setDistinguishedName($userInfos['distinguishedName']);
         $user->save();
       }
 
