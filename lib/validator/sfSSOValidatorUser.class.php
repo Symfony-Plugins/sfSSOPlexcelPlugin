@@ -57,7 +57,7 @@ class sfSSOValidatorUser extends sfGuardValidatorUser
 
     $log->log('{sfSSOValidator} checking : '.$username_sso);
 
-    if ( sfConfig::get('app_sf_guard_sso_active') && $is_sso_user OR sfPlexcel::logOn($username_sso, $password))
+    if ( sfConfig::get('app_sf_guard_sso_active') && ($is_sso_user OR sfPlexcel::logOn($username_sso, $password)))
     {
       $log->log('{sfSSOValidator} user logon');
       $this->checkIfuserIsMemberOf();
