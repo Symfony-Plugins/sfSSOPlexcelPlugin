@@ -77,16 +77,16 @@ class sfSSOValidatorUser extends sfGuardValidatorUser
       if (!$user)
       {
         $user = new sfGuardUser();
-        $user->setUsername($username);
-
-        $userInfos = sfPlexcel::getAccount(null, array('givenName', 'sn', 'mail', 'distinguishedName'));
-        $user->getProfile()->setFirstname($userInfos['givenName']);
-        $user->getProfile()->setLastname($userInfos['sn']);
-        $user->getProfile()->setEmail($userInfos['mail']);
-        $user->getProfile()->set(sfConfig::get('app_sf_guard_sso_field','is_local'),false);
-        $user->getProfile()->setDistinguishedName($userInfos['distinguishedName']);
-        $user->save();
       }
+      $user->setUsername($username);
+
+      $userInfos = sfPlexcel::getAccount(null, array('givenName', 'sn', 'mail', 'distinguishedName'));
+      $user->getProfile()->setFirstname($userInfos['givenName']);
+      $user->getProfile()->setLastname($userInfos['sn']);
+      $user->getProfile()->setEmail($userInfos['mail']);
+      $user->getProfile()->set(sfConfig::get('app_sf_guard_sso_field','is_local'),false);
+      $user->getProfile()->setDistinguishedName($userInfos['distinguishedName']);
+      $user->save();
 
       return array_merge($values, array('user' => $user));
     }
