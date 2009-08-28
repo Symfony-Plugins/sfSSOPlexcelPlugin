@@ -4,7 +4,7 @@ class BaseSSOPlexcelForm extends BasesfGuardFormSignin
 {
   public function configure()
   {
-    parent::setup();
+    parent::configure();
 
     $this->widgetSchema['sso_login']    = new sfWidgetFormInputHidden();
     $this->validatorSchema['sso_login'] = new sfValidatorBoolean();
