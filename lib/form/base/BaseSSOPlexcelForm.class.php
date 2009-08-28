@@ -2,7 +2,7 @@
 
 class BaseSSOPlexcelForm extends BasesfGuardFormSignin
 {
-  public function setup()
+  public function configure()
   {
     parent::setup();
 
