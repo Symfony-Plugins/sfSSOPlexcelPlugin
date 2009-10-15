@@ -6,7 +6,7 @@ Install of sfSSOPlexcelPlugin
 all:
   sf_guard_plugin:
     signin_form:        SSOPlexcelForm    # form class for SSOPlexcel
-    profile_class:      DoolUser          # profile class 
+    profile_class:      SiteUser          # profile class
     profile_field_name: user_id           # foreign key in the profile class
     success_signin_url: @homepage         # url where the user is redirect after a login
 
@@ -15,7 +15,7 @@ all:
     field:            is_local            # field champ qui indique si c'est un utilisateur local ou SSO
     local_login:      true                # active local login
     auto_add_domaine: domain.com          # SSO domain
-    restrict_login_to_groups: true        # 
+    restrict_login_to_groups: true        #
     authorized_cn:    [ admins]           # groups list authorized to logon with SSO
     lib_dir:          <?php echo sfConfig::get('sf_lib_dir').'/vendor/plexcel'.PHP_EOL; ?> # override default plexcel files
     success_signin_url: @homepage_sso     # url where the user is redirect  after a SSO login
@@ -23,14 +23,14 @@ all:
   ldap_search:
     action_count_users_never_connected: true # active test action in module ldap search module
     action_search:    true                # active search action in module ldap search module
-    user_filter:                          # default filters 
+    user_filter:                          # default filters
       department:     'mydepartement'
     groups:
       Administrators: administrator
 
 3) in your routing.yml add
 
-sf_guard_signout:
+sf_guard_signin:
   url:   /login
   param: { module: sfGuardSSO, action: signin }
 
@@ -39,7 +39,40 @@ sf_guard_signout:
   param: { module: sfGuardSSO, action: signout }
 
 
-4) clear your cache with : php symfony cc
+4) extends your myUser (app/application/lib/myUser.class.php) with sfSSOSecurityUser
+
+5) configure your setting.yml of application
+
+all:
+  .settings:
+    enabled_modules: [default, sfGuardSSO]
+  .actions:
+    login_module:           sfGuardSSO   # To be called when a non-authenticated user
+    login_action:           signin       # Tries to access a secure page
+
+
+6) in your schema.yml add or update a profile table:
+SiteUser:
+  tableName: site_user
+  columns:
+    firstname: { type: string(255)}
+    lastname:  { type: string(255)}
+    is_local:  { type: boolean, default: true, notnull: true }
+    user_id:   { type: integer(4)}
+    email:     { type: string(100)}
+    department: { type: string(255)}
+    distinguished_name: { type: string(512) }
+  relations:
+    sfGuardUser:
+      class:        sfGuardUser
+      foreignAlias: Profile
+      foreignType:  one
+      onDelete:     CASCADE
+      local:        user_id
+
+7) clear your cache with : php symfony doctrine:build-all-reload
+
+8) php symfony cc
 
 
 
